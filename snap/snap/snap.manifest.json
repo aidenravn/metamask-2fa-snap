@@ -1,0 +1,26 @@
+{
+  "version": "0.1.0",
+  "proposedName": "TxGuard Snap (PoC)",
+  "description": "Software-based 2FA layer for MetaMask – companion approval before transactions.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourname/txguard-snap"
+  },
+  "source": {
+    "shasum": "TO_BE_FILLED_BY_CLI",
+    "location": {
+      "npm": {
+        "filePath": "dist/index.js",
+        "iconPath": "",
+        "packageName": "txguard-snap",
+        "registry": "https://registry.npmjs.org"
+      }
+    }
+  },
+  "initialPermissions": {
+    "endowment:network-access": {},
+    "snap_manageState": {},
+    "endowment:rpc": { "dapps": true, "snaps": true }
+  },
+  "manifestVersion": "0.1"
+}
