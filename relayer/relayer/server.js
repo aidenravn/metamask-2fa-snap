@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const Ajv = require('ajv');
 const etag = require('etag');
+const { verifyMessage } = require('ethers');
 
 const app = express();
 
@@ -49,8 +50,8 @@ const schema = {
   properties: {
     from: { type: 'string' },
     to: { type: 'string' },
-    value: { type: 'string' }, // optional but must be string if present
-    data: { type: 'string' },  // optional but must be string if present
+    value: { type: 'string' },
+    data: { type: 'string' },
     chainId: { type: 'integer' },
     timestamp: { type: 'integer' },
     humanReadable: { type: 'string' },
@@ -61,12 +62,22 @@ const schema = {
 };
 const validate = ajv.compile(schema);
 
-// Basic root
+// ── Helper: verify device signature
+function verifyDeviceSig(pubKey, digest, signature) {
+  try {
+    const recovered = verifyMessage(digest, signature);
+    return recovered.toLowerCase() === pubKey.toLowerCase();
+  } catch (e) {
+    return false;
+  }
+}
+
+// ── Basic root
 app.get('/', (_req, res) => {
   res.type('text').send('TxGuard Relayer running. POST /approval');
 });
 
-// Create approval
+// ── Create approval
 app.post('/approval', (req, res) => {
   if (!validate(req.body)) {
     return res
@@ -83,18 +94,25 @@ app.post('/approval', (req, res) => {
     status: 'pending',
     signatures: []
   };
+
+  // TTL: expire after 5 minutes
+  const TTL = 5 * 60 * 1000;
+  setTimeout(() => {
+    delete approvals[requestId];
+    console.log('[Relayer] Expired approval', requestId);
+  }, TTL);
+
   console.log('[Relayer] Received approval:', requestId);
   return res.json({ ok: true, id: requestId });
 });
 
-// List approvals (debug)
+// ── List approvals (debug)
 app.get('/approvals', (_req, res) => {
-  // small cache control: this list changes frequently
   res.set('Cache-Control', 'no-store');
   return res.json(approvals);
 });
 
-// Query single approval (ETag + no-store)
+// ── Query single approval (ETag + no-store)
 app.get('/approval/:id', (req, res) => {
   const id = req.params.id;
   const item = approvals[id];
@@ -111,21 +129,38 @@ app.get('/approval/:id', (req, res) => {
   return res.type('json').send(payload);
 });
 
-// Simulate mobile sign/approve
+// ── Sign / Approve endpoint
 app.post('/approval/:id/sign', (req, res) => {
   const id = req.params.id;
   const item = approvals[id];
   if (!item) return res.status(404).json({ ok: false, error: 'not found' });
 
+  // Prevent replay
+  if (item.status !== 'pending') {
+    return res.status(409).json({ ok: false, error: 'already finalized' });
+  }
+
   const { devicePubKey, deviceSignature, approve = true } = req.body || {};
+  if (!devicePubKey || !deviceSignature) {
+    return res.status(400).json({ ok: false, error: 'missing signature' });
+  }
+
+  const digest = item.request.digest;
+
+  // Cryptographic verification
+  const ok = verifyDeviceSig(devicePubKey, digest, deviceSignature);
+  if (!ok) {
+    return res.status(401).json({ ok: false, error: 'invalid signature' });
+  }
+
   item.signatures.push({ devicePubKey, deviceSignature, ts: Date.now() });
   item.status = approve ? 'approved' : 'rejected';
+
   console.log(`[Relayer] ${approve ? 'Approved' : 'Rejected'} ${id}`);
   return res.json({ ok: true, id, status: item.status });
 });
 
-// Centralized error handler
-// (so CORS errors and others return JSON)
+// ── Centralized error handler
 app.use((err, _req, res, _next) => {
   console.error('[Error]', err.message);
   res
