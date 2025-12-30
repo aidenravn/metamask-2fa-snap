@@ -24,7 +24,7 @@ We welcome community feedback, code review, and responsible vulnerability report
 If you discover a potential security issue:
 1. **Do not create a public issue immediately.**
 2. Please contact the maintainers privately via email:  
-   📧 **@holdonravn** *(PGP key will be published soon)*  
+   📧 **@aidenravn** *(PGP key will be published soon)*  
 3. Include:
    - A clear description of the issue  
    - Steps to reproduce  
