@@ -25,7 +25,7 @@ By contributing, you acknowledge these risks and agree to follow safe experiment
 
 1. Fork & Clone
 
-git clone https://github.com/your-username/txguard-snap.git
+git clone https://github.com/aidenravn/txguard-snap.git
 cd txguard-snap
 
 	•	Work on the latest branch.
