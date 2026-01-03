@@ -1,3 +1,11 @@
+## 🤝 Contributing
+
+We welcome contributions to the TxGuard Snap Proof-of-Concept!  
+
+Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to safely contribute, test, and submit code.  
+
+**⚠️ Reminder:** This is an **experimental PoC**. Do **not** use it with real funds. Approvals are simulated, and the relayer currently has **no authentication or HTTPS**. Always follow security best practices when contributing or testing.
+
 TxGuard Snap (PoC)
 
 Software‑based 2FA layer for MetaMask — adds mobile / companion approval before transactions.
